@@ -98,9 +98,35 @@
     <h1>YouTube Interact Mode Settings</h1>
     
     <div class="form-group">
+      <label>
+        <input type="checkbox" id="extension-enabled" checked>
+        Enable Extension
+      </label>
+      <div class="help-text">Uncheck to disable injection of Interact Mode on YouTube.</div>
+    </div>
+
+    <div class="form-group">
       <label for="openai-key">OpenAI API Key</label>
       <input type="text" id="openai-key" placeholder="sk-...">
       <div class="help-text">Your OpenAI API key is required for the chat functionality. Get one from <a href="https://platform.openai.com/account/api-keys" target="_blank">OpenAI's website</a>.</div>
+    </div>
+
+    <div class="form-group">
+      <label for="text-model">Text Chat Model</label>
+      <select id="text-model">
+        <option value="gpt-4o-mini">gpt-4o-mini</option>
+        <option value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</option>
+      </select>
+      <div class="help-text">Select the model to use for text chat interactions.</div>
+    </div>
+
+    <div class="form-group">
+      <label for="voice-model">Voice Chat Model</label>
+      <select id="voice-model">
+        <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
+        <option value="gpt-4o-mini-realtime-preview-2024-12-17">gpt-4o-mini-realtime-preview-2024-12-17</option>
+      </select>
+      <div class="help-text">Select the model to use for voice chat interactions.</div>
     </div>
 
     <div class="form-group">

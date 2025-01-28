@@ -3,6 +3,8 @@ class YouTubeInteractPanel {
     this.panel = null;
     this.isVoiceModeActive = false;
     this.transcript = '';
+    this.conversation = []; // Store conversation history
+    this.ws = null; // WebSocket for voice mode
   }
 
   create() {
@@ -13,6 +15,7 @@ class YouTubeInteractPanel {
     this.panel.innerHTML = `
       <div class="yt-interact-panel-header">
         <h3 class="yt-interact-panel-title">YouTube Interact Mode</h3>
+        <button class="yt-interact-copy">Copy</button>
         <button class="yt-interact-panel-close">✕</button>
       </div>
       <div class="yt-interact-messages"></div>
@@ -32,6 +35,7 @@ class YouTubeInteractPanel {
     const input = this.panel.querySelector('.yt-interact-input');
     const sendBtn = this.panel.querySelector('.yt-interact-send-btn');
     const voiceBtn = this.panel.querySelector('.yt-interact-voice-btn');
+    const copyBtn = this.panel.querySelector('.yt-interact-copy');
 
     closeBtn.addEventListener('click', () => this.close());
     
@@ -48,15 +52,24 @@ class YouTubeInteractPanel {
     });
 
     voiceBtn.addEventListener('click', () => this.toggleVoiceMode());
+
+    copyBtn.addEventListener('click', () => {
+      const text = this.conversation.map(msg => 
+        `${msg.role.toUpperCase()}: ${msg.content}`
+      ).join('\n\n');
+      navigator.clipboard.writeText(text)
+        .then(() => this.addMessage('assistant', 'Conversation copied to clipboard.'))
+        .catch(err => console.error('Failed to copy:', err));
+    });
   }
 
   async handleUserMessage(message) {
     if (!message.trim()) return;
 
     this.addMessage('user', message);
+    this.conversation.push({ role: 'user', content: message });
     
     try {
-      // Get settings from storage
       const settings = await this.getSettings();
       
       if (!settings.openaiApiKey) {
@@ -64,16 +77,19 @@ class YouTubeInteractPanel {
         return;
       }
 
-      // Prepare the messages array with system message containing transcript
+      // Use the appropriate model based on mode
+      const model = this.isVoiceModeActive ? settings.voiceModel : settings.textModel;
+
+      // Build conversation history for context
       const messages = [
         {
           role: 'system',
-          content: `You are a helpful assistant discussing a YouTube video. Here is the video transcript:\n\n${this.transcript}\n\nReference this content when answering questions.`
+          content: `The user would like to further discuss the content of the video.
+Here is the transcript:
+${this.transcript}
+--- End Transcript ---`
         },
-        {
-          role: 'user',
-          content: message
-        }
+        ...this.conversation // Include full conversation history
       ];
 
       // Call OpenAI API
@@ -84,7 +100,7 @@ class YouTubeInteractPanel {
           'Authorization': `Bearer ${settings.openaiApiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: model,
           messages: messages,
           temperature: 0.7
         })
@@ -98,6 +114,7 @@ class YouTubeInteractPanel {
 
       const reply = data.choices[0].message.content;
       this.addMessage('assistant', reply);
+      this.conversation.push({ role: 'assistant', content: reply });
 
     } catch (error) {
       console.error('Error:', error);
@@ -129,10 +146,38 @@ class YouTubeInteractPanel {
       
       const voiceBtn = this.panel.querySelector('.yt-interact-voice-btn');
       voiceBtn.classList.add('yt-interact-voice-active');
-      
-      // TODO: Implement real-time voice processing with OpenAI Whisper API
-      // For now, just show a placeholder message
-      this.addMessage('assistant', 'Voice mode activated (implementation pending)');
+
+      // Get settings for WebSocket connection
+      const settings = await this.getSettings();
+      const model = settings.voiceModel;
+
+      // Connect to OpenAI Realtime API
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=${model}`;
+      this.ws = new WebSocket(wsUrl, [
+        'realtime',
+        `openai-insecure-api-key.${settings.openaiApiKey}`,
+        'openai-beta.realtime-v1',
+      ]);
+
+      this.ws.onopen = () => {
+        this.addMessage('assistant', 'Voice mode connected. Speak to interact.');
+      };
+
+      this.ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        // Handle real-time responses
+        if (data.type === 'response' && data.text) {
+          this.addMessage('assistant', data.text);
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.addMessage('assistant', 'Voice mode error. Please try again.');
+        this.stopVoiceMode();
+      };
+
+      // TODO: Set up AudioWorklet for real-time audio processing
       
     } catch (error) {
       console.error('Error accessing microphone:', error);
@@ -144,16 +189,23 @@ class YouTubeInteractPanel {
     this.isVoiceModeActive = false;
     const voiceBtn = this.panel.querySelector('.yt-interact-voice-btn');
     voiceBtn.classList.remove('yt-interact-voice-active');
-    // TODO: Clean up voice mode resources
+
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
 
   async getSettings() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get(['openaiApiKey', 'defaultMode'], (result) => {
-        resolve({
-          openaiApiKey: result.openaiApiKey || '',
-          defaultMode: result.defaultMode || 'text'
-        });
+      chrome.storage.sync.get({
+        openaiApiKey: '',
+        defaultMode: 'text',
+        extensionEnabled: true,
+        textModel: 'gpt-4o-mini',
+        voiceModel: 'gpt-4o-realtime-preview-2024-12-17'
+      }, (result) => {
+        resolve(result);
       });
     });
   }

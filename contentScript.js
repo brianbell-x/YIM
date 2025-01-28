@@ -6,72 +6,129 @@
     if (DEBUG) console.log('[YouTube Interact]', ...args);
   }
 
-  function extractTranscript() {
-    // Find the transcript panel
-    const transcriptPanel = document.querySelector('ytd-transcript-segment-list-renderer');
-    if (!transcriptPanel) {
-      log('No transcript panel found');
-      return '';
-    }
-
-    // Get all transcript segments
-    const segments = transcriptPanel.querySelectorAll('ytd-transcript-segment-renderer');
-    let transcriptText = '';
-
-    segments.forEach(segment => {
-      const timestamp = segment.querySelector('#timestamp')?.textContent?.trim() || '';
-      const text = segment.querySelector('#text')?.textContent?.trim() || '';
-      transcriptText += `[${timestamp}] ${text}\n`;
-    });
-
-    return transcriptText;
+  // Get video ID from URL
+  function getVideoId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('v');
   }
 
-  function openTranscriptPanel() {
-    // Find and click the "Show transcript" button if it exists
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const showTranscriptButton = buttons.find(button => 
-      button.textContent.toLowerCase().includes('show transcript')
-    );
+  // Check if transcript is cached
+  async function getCachedTranscript(videoId) {
+    return new Promise((resolve) => {
+      const key = `transcript_${videoId}`;
+      chrome.storage.local.get([key], (result) => {
+        resolve(result[key] || null);
+      });
+    });
+  }
 
-    if (showTranscriptButton) {
-      showTranscriptButton.click();
-      return true;
+  // Cache a transcript
+  async function cacheTranscript(videoId, transcript) {
+    const key = `transcript_${videoId}`;
+    return chrome.storage.local.set({ [key]: transcript });
+  }
+
+  // Get audio data from video
+  async function getVideoAudio() {
+    const video = document.querySelector('video');
+    if (!video) throw new Error('No video element found');
+
+    // Create a MediaRecorder to capture the audio stream
+    const stream = video.captureStream();
+    const audioTrack = stream.getAudioTracks()[0];
+    if (!audioTrack) throw new Error('No audio track found');
+
+    const mediaRecorder = new MediaRecorder(new MediaStream([audioTrack]));
+    const chunks = [];
+
+    return new Promise((resolve, reject) => {
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: 'audio/webm' }));
+      mediaRecorder.onerror = reject;
+
+      // Record current position to end
+      const duration = video.duration - video.currentTime;
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), duration * 1000);
+    });
+  }
+
+  // Transcribe using Whisper API
+  async function transcribeAudio(audioBlob, apiKey) {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+    formData.append('model', 'whisper-1');
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Whisper API error: ' + await response.text());
     }
 
-    return false;
+    const data = await response.json();
+    return data.text;
+  }
+
+  // Get settings from storage
+  async function getSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get({
+        openaiApiKey: '',
+        defaultMode: 'text',
+        extensionEnabled: true,
+        textModel: 'gpt-4o-mini',
+        voiceModel: 'gpt-4o-realtime-preview-2024-12-17'
+      }, (items) => resolve(items));
+    });
   }
 
   async function handleInteractButtonClick() {
-    // Pause the video
     const video = document.querySelector('video.html5-main-video');
     if (video) {
       log('Video found, pausing...');
       video.pause();
     }
 
-    // Create panel if it doesn't exist
     if (!interactPanel) {
       interactPanel = new YouTubeInteractPanel();
     }
 
-    // Try to get transcript
-    let transcript = extractTranscript();
+    // Get video ID and check cache
+    const videoId = getVideoId();
+    if (!videoId) {
+      log('Could not determine video ID');
+      return;
+    }
+
+    let transcript = await getCachedTranscript(videoId);
+    
     if (!transcript) {
-      // If no transcript, try opening the transcript panel
-      if (openTranscriptPanel()) {
-        // Wait a bit for the panel to load
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        transcript = extractTranscript();
+      try {
+        const settings = await getSettings();
+        if (!settings.openaiApiKey) {
+          throw new Error('OpenAI API key not set');
+        }
+
+        // Get audio and transcribe
+        const audioBlob = await getVideoAudio();
+        transcript = await transcribeAudio(audioBlob, settings.openaiApiKey);
+        
+        // Cache the result
+        await cacheTranscript(videoId, transcript);
+        
+      } catch (error) {
+        console.error('Transcription error:', error);
+        transcript = 'No transcript available (Whisper error).';
       }
     }
 
-    if (transcript) {
-      interactPanel.setTranscript(transcript);
-    } else {
-      interactPanel.setTranscript('No transcript available for this video.');
-    }
-
+    interactPanel.setTranscript(transcript);
     interactPanel.create();
   }
 
@@ -82,15 +139,9 @@
       return;
     }
 
-    // Try multiple common selectors
-    const buttonContainer = document.querySelector('ytd-watch-metadata #top-level-buttons-computed')
-                       || document.querySelector('#top-level-buttons-computed')
-                       || document.querySelector('ytd-watch-metadata #top-level-buttons')
-                       || document.querySelector('#top-level-buttons');
-
-    log('buttonContainer found:', buttonContainer);
-
-    if (!buttonContainer) {
+    // Find the container between Like/Dislike and Share
+    const container = document.querySelector('#top-level-buttons-computed');
+    if (!container) {
       log('No button container found, will try again on next mutation');
       return;
     }
@@ -109,19 +160,18 @@
     // Add click handler
     interactButton.addEventListener('click', handleInteractButtonClick);
 
-    // Append button to wrapper, then wrapper to container
+    // Insert after Like/Dislike but before Share
     buttonWrapper.appendChild(interactButton);
-    buttonContainer.appendChild(buttonWrapper);
-    log('Interact button successfully injected!');
-
-    // Add debug visual if needed
-    if (DEBUG) {
-      const testDiv = document.createElement('div');
-      testDiv.textContent = 'YouTube Interact Extension Active';
-      testDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 999999; background: rgba(255,0,0,0.8); color: white; padding: 5px; font-size: 12px; border-radius: 4px;';
-      document.body.appendChild(testDiv);
-      setTimeout(() => testDiv.remove(), 3000);
+    const shareButton = Array.from(container.children).find(el => 
+      el.textContent.toLowerCase().includes('share')
+    );
+    if (shareButton) {
+      container.insertBefore(buttonWrapper, shareButton);
+    } else {
+      container.appendChild(buttonWrapper);
     }
+    
+    log('Interact button successfully injected!');
   }
 
   // A small MutationObserver to watch for #top-level-buttons-computed changes
@@ -131,8 +181,15 @@
   });
 
   // Wait for the page to be ready
-  function init() {
+  async function init() {
     log('Initializing YouTube Interact extension...');
+
+    // Check if extension is enabled
+    const settings = await getSettings();
+    if (!settings.extensionEnabled) {
+      log('Extension is disabled in settings');
+      return;
+    }
     
     // Try to find the watch page container
     const watchFlexy = document.querySelector('ytd-watch-flexy') || document.body;

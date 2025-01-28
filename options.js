@@ -2,11 +2,17 @@
 function saveOptions() {
   const openaiKey = document.getElementById('openai-key').value;
   const defaultMode = document.getElementById('default-mode').value;
+  const extensionEnabled = document.getElementById('extension-enabled').checked;
+  const textModel = document.getElementById('text-model').value;
+  const voiceModel = document.getElementById('voice-model').value;
   
   chrome.storage.sync.set(
     {
       openaiApiKey: openaiKey,
-      defaultMode: defaultMode
+      defaultMode: defaultMode,
+      extensionEnabled: extensionEnabled,
+      textModel: textModel,
+      voiceModel: voiceModel
     },
     () => {
       // Update status to let user know options were saved
@@ -28,24 +34,45 @@ function restoreOptions() {
   chrome.storage.sync.get(
     {
       openaiApiKey: '', // default value
-      defaultMode: 'text' // default value
+      defaultMode: 'text', // default value
+      extensionEnabled: true, // default value
+      textModel: 'gpt-4o-mini', // default value
+      voiceModel: 'gpt-4o-realtime-preview-2024-12-17' // default value
     },
     (items) => {
       document.getElementById('openai-key').value = items.openaiApiKey;
       document.getElementById('default-mode').value = items.defaultMode;
+      document.getElementById('extension-enabled').checked = items.extensionEnabled;
+      document.getElementById('text-model').value = items.textModel;
+      document.getElementById('voice-model').value = items.voiceModel;
     }
   );
 }
 
-// Validate OpenAI API key format
-function validateApiKey(key) {
-  // Basic format check for OpenAI API keys
-  return /^sk-[A-Za-z0-9]{32,}$/.test(key);
+async function validateApiKey(key) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        messages: [{ role: "developer", content: "Hi" }],
+        model: "gpt-4o-mini",
+        max_tokens: 1
+      })
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.error('API validation error:', error);
+    return false;
+  }
 }
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click', () => {
+document.getElementById('save').addEventListener('click', async () => {
   const openaiKey = document.getElementById('openai-key').value;
   const status = document.getElementById('status');
   
@@ -56,8 +83,14 @@ document.getElementById('save').addEventListener('click', () => {
     return;
   }
   
-  if (!validateApiKey(openaiKey)) {
-    status.textContent = 'Invalid OpenAI API key format. It should start with "sk-" followed by at least 32 characters.';
+  status.textContent = 'Validating API key...';
+  status.className = '';
+  status.style.display = 'block';
+
+  const isValid = await validateApiKey(openaiKey);
+  
+  if (!isValid) {
+    status.textContent = 'Invalid API key. Please check your key and try again.';
     status.className = 'error';
     status.style.display = 'block';
     return;
