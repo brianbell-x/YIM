@@ -95,14 +95,39 @@
       video.pause();
     }
 
-    if (!interactPanel) {
-      interactPanel = new YouTubeInteractPanel();
+    // Find or create expander
+    let expander = document.querySelector('#my-interact-expander');
+    if (!expander) {
+      expander = document.createElement('div');
+      expander.id = 'my-interact-expander';
+      expander.className = 'yt-interact-expander';
+
+      // Insert below video description
+      const descContainer = document.querySelector('#description-inline-expander') 
+                          || document.querySelector('#description');
+      if (descContainer) {
+        descContainer.parentElement.insertBefore(expander, descContainer.nextSibling);
+      }
     }
+
+    // Initialize expander content
+    expander.innerHTML = `
+      <div class="yt-interact-expander-header">
+        <h3 class="yt-interact-expander-title">Interact Mode</h3>
+        <div id="my-interact-status" class="yt-interact-status">
+          Paused video. Preparing to transcribe...
+        </div>
+      </div>
+      <div id="my-interact-chat" class="yt-interact-chat"></div>
+    `;
+
+    const statusEl = expander.querySelector('#my-interact-status');
+    const chatEl = expander.querySelector('#my-interact-chat');
 
     // Get video ID and check cache
     const videoId = getVideoId();
     if (!videoId) {
-      log('Could not determine video ID');
+      statusEl.textContent = 'Error: Could not determine video ID';
       return;
     }
 
@@ -112,24 +137,110 @@
       try {
         const settings = await getSettings();
         if (!settings.openaiApiKey) {
-          throw new Error('OpenAI API key not set');
+          statusEl.textContent = 'Error: OpenAI API key not set. Please set it in extension options.';
+          return;
         }
 
-        // Get audio and transcribe
+        statusEl.textContent = 'Retrieving audio from the video...';
         const audioBlob = await getVideoAudio();
+
+        statusEl.textContent = 'Transcribing audio with Whisper...';
         transcript = await transcribeAudio(audioBlob, settings.openaiApiKey);
         
-        // Cache the result
         await cacheTranscript(videoId, transcript);
         
       } catch (error) {
         console.error('Transcription error:', error);
-        transcript = 'No transcript available (Whisper error).';
+        statusEl.textContent = `Error: ${error.message}`;
+        return;
       }
     }
 
-    interactPanel.setTranscript(transcript);
-    interactPanel.create();
+    // Initialize chat UI
+    statusEl.textContent = 'Transcript ready. You can start chatting!';
+    chatEl.innerHTML = `
+      <div class="yt-interact-chat-messages"></div>
+      <div class="yt-interact-chat-input">
+        <input type="text" placeholder="Ask about the video...">
+        <button>Send</button>
+      </div>
+    `;
+
+    const messagesEl = chatEl.querySelector('.yt-interact-chat-messages');
+    const inputEl = chatEl.querySelector('input');
+    const sendBtn = chatEl.querySelector('button');
+
+    // Handle sending messages
+    async function handleSendMessage() {
+      const message = inputEl.value.trim();
+      if (!message) return;
+
+      // Add user message
+      const userDiv = document.createElement('div');
+      userDiv.className = 'yt-interact-message user';
+      userDiv.textContent = message;
+      messagesEl.appendChild(userDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      inputEl.value = '';
+
+      try {
+        const settings = await getSettings();
+        
+        // Build messages array with system context
+        const messages = [
+          {
+            role: 'system',
+            content: `You are helping discuss a YouTube video. Here is the transcript:
+${transcript}
+--- End Transcript ---`
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ];
+
+        // Call OpenAI API
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: settings.textModel,
+            messages: messages,
+            temperature: 0.7
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message);
+        }
+
+        // Add assistant response
+        const assistantDiv = document.createElement('div');
+        assistantDiv.className = 'yt-interact-message assistant';
+        assistantDiv.textContent = data.choices[0].message.content;
+        messagesEl.appendChild(assistantDiv);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      } catch (error) {
+        console.error('Chat error:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'yt-interact-message assistant';
+        errorDiv.textContent = `Error: ${error.message}`;
+        messagesEl.appendChild(errorDiv);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+    }
+
+    sendBtn.addEventListener('click', handleSendMessage);
+    inputEl.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleSendMessage();
+    });
   }
 
   function injectInteractButton() {
@@ -153,7 +264,7 @@
     const interactButton = document.createElement('button');
     interactButton.id = 'my-youtube-interact-button';
     interactButton.className = 'yt-interact-button';
-    interactButton.textContent = 'Interact';
+    interactButton.textContent = 'INTERACT';
     interactButton.setAttribute('title', 'Open Interact Mode');
     interactButton.setAttribute('aria-label', 'Open Interact Mode');
 

@@ -1,8 +1,14 @@
 // Listen for installation or update
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    // Open options page on install
-    chrome.runtime.openOptionsPage();
+    // Initialize default settings
+    chrome.storage.sync.set({
+      openaiApiKey: '',
+      extensionEnabled: true,
+      textModel: 'gpt-4o-mini',
+      voiceModel: 'gpt-4o-realtime-preview-2024-12-17',
+      defaultMode: 'text'
+    });
   }
 });
 
@@ -13,7 +19,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.sync.get(
       {
         openaiApiKey: '',
-        defaultMode: 'text'
+        defaultMode: 'text',
+        extensionEnabled: true,
+        textModel: 'gpt-4o-mini',
+        voiceModel: 'gpt-4o-realtime-preview-2024-12-17'
       },
       (items) => {
         sendResponse(items);
