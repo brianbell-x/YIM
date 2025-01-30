@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Youtube Interact Mode Options</title>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        width: 300px;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+      }
+      h1 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+        box-sizing: border-box;
+      }
+      button {
+        background: #3ea6ff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      p {
+        font-size: 14px;
+        color: #666;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Youtube Interact Mode Settings</h1>
+    <label for="apiKey">OpenAI API Key</label>
+    <br/>
+    <input type="password" id="apiKey" placeholder="sk-..." />
+    <button id="saveKey">Save</button>
+    <br/><br/>
+    <p>Enable or disable the extension in the context menu at any time.</p>
+    <script src="../options.js"></script>
+  </body>
+</html> 
