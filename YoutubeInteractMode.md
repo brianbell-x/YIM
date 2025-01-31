@@ -7,10 +7,10 @@ An AI chat assistant with the YouTube video's transcript in its context. As a Ch
 The YouTube video will need to be downloaded then transcribed using Whisper. The process involves:
 
 1. **Video Download**
-   - Download Video as Mp3 - `docs/youtube-to-mp3.js`
+   - Download Video
 
 2. **Audio Processing**
-   - If mp3 file is larger than 25MB, split into 25MB chunks
+   - If audio file is larger than 25MB, split into 25MB chunks
    - No special chunking strategy needed (e.g., silence detection)
 
 3. **Transcription**
@@ -19,15 +19,25 @@ The YouTube video will need to be downloaded then transcribed using Whisper. The
    - Store entire transcript in system prompt without summarization
 
 4. **Storage & Caching**
-   - Cache transcripts in Chrome's local storage
+   - Cache transcripts in downloads folder as a json file.
     - video_id -> transcript
    - Reuse cached transcripts to avoid re-transcription
    - Store until storage limits are reached
    - No special indexing or retrieval system needed
+   - Allow user to change location of the cache.
 
 5. **Source**
    - Rely solely on Whisper for transcription
-   - No need to check for official YouTube captions
+
+### Process:
+This should be done with a script of some sort. Python is probably the best choice. 
+
+Usage:
+  1) Take the youtube url, provided api key, and destination folder.
+  2) The script downloads the audio (webm), checks size, splits/chunks if necessary
+  3) The script transcribes each chunk, merges, and writes the final transcript out.
+  4) Place transcript wherever you wish (maybe a .json file that includes
+     the video_id -> transcript). Downloads folder is probably the best choice. but allow user to change location.
 
 ## Text Mode
 
@@ -54,61 +64,17 @@ The YouTube video will need to be downloaded then transcribed using Whisper. The
   - Clear conversation button
 
 ### Interaction Flow
-1. User clicks "Interact Mode" button (located between like/dislike and share buttons)
-2. Video automatically pauses
-3. Chat UI expands above description
+1. User enables "Interact Mode" toggle in the extension icon context menu
+3. Chat UI opens to the right of the video, as a live chat would be.
 4. User can type messages and receive AI responses while referencing video content
 5. Entire conversation remains in context for follow-up questions
 
-## Voice Mode
-
-### System Prompt
-- Shares the same system prompt as Text Mode with full transcript
-- Maintains continuous conversation history with Text Mode
-- System prompt template matches Text Mode:
-  ```
-  The user would like to further discuss the content of the video. Here is the transcript: <transcript>... </transcript>
-  ```
-
-### Audio Handling
-- Uses browser's `MediaDevices.getUserMedia` for microphone capture
-- Implements WebSocket connection to Realtime API (wss://api.openai.com/v1/realtime)
-- Audio encoding: PCM16 format at 24kHz sample rate (Realtime API recommended)
-- Utilizes server-side turn detection (`turn_detection` enabled)
-- Implements Realtime API's recommended voice activity indicators:
-  - Visual feedback for "listening", "processing", and "speaking" states
-  - Animated voice activity indicator next to input
-
-### Conversation Management
-- Shares in-memory conversation history with Text Mode
-- Maintains single continuous context across text/voice interactions
-- Uses same model instructions and context window management as Text Mode
-
-### User Interface
-- Voice toggle button (microphone icon) beside text input
-- Real-time voice waveform visualization
-- Status indicators for connection/recognition states
-- Text transcript of voice interaction displayed alongside responses
-- Audio output controls with play/pause/volume
-- Model selector dropdown (gpt-4o-realtime-preview-2024-12-17, gpt-4o-mini-realtime-preview-2024-12-17)
-
-### Interaction Flow
-1. User clicks voice icon to start voice mode
-2. System establishes WebSocket connection to Realtime API
-3. Browser microphone activates with user permission
-4. Real-time audio streaming begins using PCM16 encoding
-5. Server-side VAD detects speech segments and triggers responses
-6. AI responses delivered via:
-   - Text: Displayed in chat history
-   - Audio: Played through Web Audio API
-7. Conversation history updated bidirectionally with Text Mode
-
 ## Options in Chrome's extension icon context menu
-- Enable/disable the extension
-- Restart the extension
+- Enable/disable toggle
+- text input for api key (in the context menu not a seperate page)
 
 ## User Interface
-The UI features a React component that replicates YouTube's native chat interface, implemented as a Chrome extension panel above the video description. Key components and implementation details:
+The UI features a React component that replicates YouTube's native live chat interface. Key components and implementation details:
 
 ### React Component Implementation
 Key features:
