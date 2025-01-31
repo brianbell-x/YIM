@@ -1,0 +1,129 @@
+.yim-container {
+  background: #0f0f0f;
+  color: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  font-family: Arial, sans-serif;
+  margin: 10px;
+  border: 1px solid #2b2b2b;
+}
+
+.yim-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.yim-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.yim-model-select {
+  padding: 5px;
+  border-radius: 4px;
+  background: #272727;
+  color: #fff;
+  border: 1px solid #3ea6ff;
+}
+
+.yim-btn {
+  background: #3ea6ff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  color: #000;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.yim-btn:hover {
+  background: #3095e8;
+}
+
+.yim-chat-area {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  border: 1px solid #2b2b2b;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.yim-user-msg,
+.yim-bot-msg {
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.yim-user-msg {
+  background-color: #2b2b2b;
+  margin-left: auto;
+}
+
+.yim-bot-msg {
+  background-color: #1a1a1a;
+  margin-right: auto;
+}
+
+.yim-input-area {
+  display: flex;
+  gap: 10px;
+}
+
+.yim-input {
+  flex: 1;
+  border-radius: 5px;
+  border: 1px solid #2b2b2b;
+  padding: 8px 12px;
+  background-color: #272727;
+  color: #fff;
+  font-size: 14px;
+}
+
+.yim-input:focus {
+  outline: none;
+  border-color: #3ea6ff;
+}
+
+.yim-send-btn {
+  background: #3ea6ff;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  color: #000;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.yim-send-btn:hover {
+  background: #3095e8;
+}
+
+.yim-send-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar for the chat area */
+.yim-chat-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.yim-chat-area::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.yim-chat-area::-webkit-scrollbar-thumb {
+  background: #3ea6ff;
+  border-radius: 4px;
+}
+
+.yim-chat-area::-webkit-scrollbar-thumb:hover {
+  background: #3095e8;
+} 

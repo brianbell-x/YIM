@@ -1,0 +1,27 @@
+{
+  "name": "YouTube Interact Mode",
+  "description": "Chat with an AI referencing the YouTube video's transcript",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ]
+} 
