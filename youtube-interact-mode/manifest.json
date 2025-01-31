@@ -18,12 +18,10 @@
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*"],
-      "js": ["contentScript.js"],
-      "css": ["styles.css"]
+      "js": ["contentScript.js"]
     }
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "https://api.openai.com/*"
+    "*://*.youtube.com/*"
   ]
 } 

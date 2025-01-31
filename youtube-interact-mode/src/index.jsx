@@ -11,10 +11,26 @@ function injectChatUI() {
   const container = document.createElement('div');
   container.id = 'youtube-interact-mode-root';
   
-  // Insert right above the video description
-  const descriptionInner = document.querySelector('#description-inner');
-  if (descriptionInner) {
-    descriptionInner.prepend(container);
+  // Try to find the live chat container first
+  let targetContainer = document.querySelector('ytd-live-chat-frame') || 
+                       document.querySelector('#chat') ||
+                       document.querySelector('#secondary-inner');
+  
+  // If no live chat container found, fallback to description
+  if (!targetContainer) {
+    targetContainer = document.querySelector('#description-inner');
+  }
+  
+  if (targetContainer) {
+    // If it's the live chat frame, we want to replace it
+    if (targetContainer.tagName.toLowerCase() === 'ytd-live-chat-frame') {
+      targetContainer.innerHTML = '';
+      targetContainer.appendChild(container);
+    } else {
+      // For other containers, we'll prepend our container
+      targetContainer.prepend(container);
+    }
+    
     // Mount React app
     const root = createRoot(container);
     root.render(<YoutubeInteractMode />);

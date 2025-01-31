@@ -1,13 +1,10 @@
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './src/index.jsx',
   output: {
     filename: 'contentScript.js',
-    path: path.resolve(__dirname, 'dist'),
-    clean: true
+    path: path.resolve(__dirname),
   },
   module: {
     rules: [
@@ -23,23 +20,10 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader']
+        use: ['style-loader', 'css-loader']
       }
     ]
   },
-  plugins: [
-    new MiniCssExtractPlugin({
-      filename: 'styles.css'
-    }),
-    new CopyPlugin({
-      patterns: [
-        { from: "background.js", to: "background.js" },
-        { from: "popup.html", to: "popup.html" },
-        { from: "popup.js", to: "popup.js" },
-        { from: "manifest.json", to: "manifest.json" }
-      ]
-    })
-  ],
   resolve: {
     extensions: ['.js', '.jsx']
   }
