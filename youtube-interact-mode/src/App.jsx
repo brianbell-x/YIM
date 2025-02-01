@@ -10,13 +10,39 @@ const YoutubeInteractMode = () => {
   const [transcriptLoading, setTranscriptLoading] = useState(true);
 
   useEffect(() => {
-    // Load transcript from storage if available
-    chrome.storage.local.get('transcript', (data) => {
-      if (data.transcript) {
-        setTranscript(data.transcript);
-      }
+    // Get video ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v');
+    
+    if (videoId) {
+      setTranscriptLoading(true);
+      
+      // First check local storage
+      chrome.storage.local.get('transcript', (data) => {
+        if (data.transcript) {
+          setTranscript(data.transcript);
+          setTranscriptLoading(false);
+        } else {
+          // Request transcript from native host
+          chrome.runtime.sendMessage({ 
+            type: 'GET_TRANSCRIPT',
+            videoId 
+          });
+          
+          // Listen for transcript updates
+          const listener = (changes) => {
+            if (changes.transcript) {
+              setTranscript(changes.transcript.newValue);
+              setTranscriptLoading(false);
+              chrome.storage.local.onChanged.removeListener(listener);
+            }
+          };
+          chrome.storage.local.onChanged.addListener(listener);
+        }
+      });
+    } else {
       setTranscriptLoading(false);
-    });
+    }
   }, []);
 
   // Send message to API

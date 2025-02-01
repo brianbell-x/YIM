@@ -1,87 +1,97 @@
 .yim-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   background: #0f0f0f;
   color: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  font-family: Arial, sans-serif;
-  margin: 10px;
-  border: 1px solid #2b2b2b;
+  font-family: "Roboto", "Arial", sans-serif;
+  border-radius: 0;
+  border: none;
 }
 
 .yim-header {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
-  gap: 10px;
+  padding: 12px;
+  background: #272727;
+  border-bottom: 1px solid #3f3f3f;
+  gap: 8px;
 }
 
 .yim-title {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: 500;
+  flex-grow: 1;
 }
 
 .yim-model-select {
-  padding: 5px;
-  border-radius: 4px;
-  background: #272727;
+  background: #3f3f3f;
   color: #fff;
-  border: 1px solid #3ea6ff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 13px;
 }
 
 .yim-btn {
-  background: #3ea6ff;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  color: #000;
+  background: transparent;
+  color: #3ea6ff;
+  border: 1px solid #3ea6ff;
+  padding: 4px 12px;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .yim-btn:hover {
-  background: #3095e8;
+  background: rgba(62, 166, 255, 0.1);
 }
 
 .yim-chat-area {
-  max-height: 300px;
+  flex-grow: 1;
   overflow-y: auto;
-  margin-bottom: 15px;
-  border: 1px solid #2b2b2b;
-  border-radius: 8px;
-  padding: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 400px;
 }
 
 .yim-user-msg,
 .yim-bot-msg {
+  max-width: 85%;
   padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  max-width: 80%;
-  word-wrap: break-word;
+  border-radius: 4px;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .yim-user-msg {
-  background-color: #2b2b2b;
-  margin-left: auto;
+  background: #2b2b2b;
+  align-self: flex-end;
 }
 
 .yim-bot-msg {
-  background-color: #1a1a1a;
-  margin-right: auto;
+  background: #1a1a1a;
+  align-self: flex-start;
 }
 
 .yim-input-area {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  padding: 12px;
+  background: #272727;
+  border-top: 1px solid #3f3f3f;
 }
 
 .yim-input {
-  flex: 1;
-  border-radius: 5px;
-  border: 1px solid #2b2b2b;
-  padding: 8px 12px;
-  background-color: #272727;
+  flex-grow: 1;
+  background: #1a1a1a;
+  border: 1px solid #3f3f3f;
   color: #fff;
+  padding: 8px 12px;
+  border-radius: 2px;
   font-size: 14px;
 }
 
@@ -92,20 +102,21 @@
 
 .yim-send-btn {
   background: #3ea6ff;
+  color: #0f0f0f;
   border: none;
-  border-radius: 5px;
   padding: 8px 16px;
-  color: #000;
+  border-radius: 2px;
   cursor: pointer;
+  font-weight: 500;
   font-size: 14px;
 }
 
 .yim-send-btn:hover {
-  background: #3095e8;
+  background: #65b8ff;
 }
 
 .yim-send-btn:disabled {
-  background: #666;
+  background: #3f3f3f;
   cursor: not-allowed;
 }
 
@@ -132,28 +143,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 20px;
-  text-align: center;
+  gap: 8px;
   color: #aaa;
-  background: #1a1a1a;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
 }
 
 .yim-spinner {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border: 2px solid #3ea6ff;
   border-top-color: transparent;
   border-radius: 50%;
-  animation: spinner 0.8s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
-@keyframes spinner {
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .yim-input:disabled {

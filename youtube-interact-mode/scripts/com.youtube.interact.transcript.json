@@ -1,0 +1,9 @@
+{
+  "name": "com.youtube.interact.transcript",
+  "description": "YouTube Interact Mode Transcript Bridge",
+  "path": "bridge.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://<extension-id>/"
+  ]
+} 

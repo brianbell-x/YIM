@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import YoutubeInteractMode from './App';
+import { initializeUI, injectChatUI } from './injectUI';
 
 // Function to inject our React app
 function injectChatUI() {
@@ -44,13 +45,16 @@ function removeChatUI() {
   }
 }
 
-// Listen for messages from background script or popup
+// Initialize UI when enabled
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'INTERACT_MODE_TOGGLED') {
     if (request.enabled) {
-      injectChatUI();
+      initializeUI();
     } else {
-      removeChatUI();
+      const root = document.getElementById('youtube-interact-mode-root');
+      if (root) {
+        root.remove();
+      }
     }
   }
 });
@@ -58,6 +62,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Check if Interact Mode is enabled on load
 chrome.storage.sync.get('interactModeEnabled', (data) => {
   if (data.interactModeEnabled) {
-    injectChatUI();
+    initializeUI();
   }
 }); 

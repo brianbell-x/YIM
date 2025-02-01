@@ -50,6 +50,22 @@ A Chrome extension that adds an AI-powered chat interface to YouTube videos, all
    - Mac: Install via homebrew: `brew install ffmpeg`
    - Linux: `sudo apt-get install ffmpeg`
 
+### 3. Native Messaging Host Setup
+
+1. Install the native messaging host:
+   ```bash
+   # On Windows
+   REG ADD "HKCU\Software\Google\Chrome\NativeMessagingHosts\com.youtube.interact.transcript" /ve /t REG_SZ /d "%~dp0scripts\com.youtube.interact.transcript.json" /f
+
+   # On Linux/macOS
+   mkdir -p ~/.config/google-chrome/NativeMessagingHosts
+   ln -s "$(pwd)/scripts/com.youtube.interact.transcript.json" ~/.config/google-chrome/NativeMessagingHosts/
+   ```
+
+2. Update the extension ID:
+   - After loading the extension in Chrome, get its ID from chrome://extensions
+   - Replace `<extension-id>` in `scripts/com.youtube.interact.transcript.json` with your extension's ID
+
 ## Usage
 
 1. **Set up your OpenAI API key**:

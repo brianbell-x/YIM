@@ -39,4 +39,35 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       }
     });
   }
+});
+
+// Handle native messaging port
+let nativePort = null;
+
+function connectToNative() {
+  nativePort = chrome.runtime.connectNative('com.youtube.interact.transcript');
+  
+  nativePort.onMessage.addListener((response) => {
+    if (response.success && response.transcript) {
+      // Store transcript in local storage
+      chrome.storage.local.set({ transcript: response.transcript });
+    }
+  });
+  
+  nativePort.onDisconnect.addListener(() => {
+    console.log('Disconnected from native host');
+    nativePort = null;
+  });
+}
+
+// Listen for transcript requests
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'GET_TRANSCRIPT' && request.videoId) {
+    if (!nativePort) {
+      connectToNative();
+    }
+    
+    // Request transcript from native host
+    nativePort.postMessage({ video_id: request.videoId });
+  }
 }); 
